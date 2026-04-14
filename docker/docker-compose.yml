@@ -22,7 +22,7 @@ services:
       - "${DATA:-.}/letsencrypt:/letsencrypt"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN:-localhost}`)"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
@@ -61,7 +61,7 @@ services:
       - mongo
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.server.rule=Host(`server.${DOMAIN}`)"
+        - "traefik.http.routers.server.rule=Host(`server.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.server.entrypoints=websecure"                                                                        
         - "traefik.http.routers.server.tls.certresolver=letsencrypt"
         - "traefik.http.services.server.loadbalancer.server.port=80"   
@@ -73,7 +73,7 @@ services:
       - "3000:80"
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.portal.rule=Host(`portal.${DOMAIN}`)"
+        - "traefik.http.routers.portal.rule=Host(`portal.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.portal.entrypoints=websecure"                                                                        
         - "traefik.http.routers.portal.tls.certresolver=letsencrypt"
         - "traefik.http.services.portal.loadbalancer.server.port=80"   
@@ -85,7 +85,7 @@ services:
       - "3002:80"
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.forms.rule=Host(`forms.${DOMAIN}`)"
+        - "traefik.http.routers.forms.rule=Host(`forms.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.forms.entrypoints=websecure"                                                                        
         - "traefik.http.routers.forms.tls.certresolver=letsencrypt"
         - "traefik.http.services.forms.loadbalancer.server.port=80"   
@@ -97,7 +97,7 @@ services:
       - "3005:80"
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.modeler.rule=Host(`modeler.${DOMAIN}`)"
+        - "traefik.http.routers.modeler.rule=Host(`modeler.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.modeler.entrypoints=websecure"                                                                        
         - "traefik.http.routers.modeler.tls.certresolver=letsencrypt"
         - "traefik.http.services.modeler.loadbalancer.server.port=80"   
@@ -109,7 +109,7 @@ services:
       - "3006:80"
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.draw.rule=Host(`draw.${DOMAIN}`)"
+        - "traefik.http.routers.draw.rule=Host(`draw.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.draw.entrypoints=websecure"                                                                        
         - "traefik.http.routers.draw.tls.certresolver=letsencrypt"
         - "traefik.http.services.draw.loadbalancer.server.port=80"   
@@ -119,7 +119,7 @@ services:
     restart: unless-stopped
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN}`)"
+        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.tuya.entrypoints=websecure"                                                                        
         - "traefik.http.routers.tuya.tls.certresolver=letsencrypt"
         - "traefik.http.services.tuya.loadbalancer.server.port=80"   
@@ -129,7 +129,7 @@ services:
     restart: unless-stopped
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.tesla.rule=Host(`tesla.${DOMAIN}`)"
+        - "traefik.http.routers.tesla.rule=Host(`tesla.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.tesla.entrypoints=websecure"                                                                        
         - "traefik.http.routers.tesla.tls.certresolver=letsencrypt"
         - "traefik.http.services.tesla.loadbalancer.server.port=80"   
@@ -144,7 +144,7 @@ services:
       LLM: cohere
     labels:
         - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN}`)"
+        - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.agent.entrypoints=websecure"                                                                        
         - "traefik.http.routers.agent.tls.certresolver=letsencrypt"
         - "traefik.http.services.agent.loadbalancer.server.port=80"   
