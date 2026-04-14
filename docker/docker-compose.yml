@@ -1,0 +1,150 @@
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "${DATA:-.}/letsencrypt:/letsencrypt"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+  mongo:
+    image: mongo:4.4
+    container_name: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: idata
+    volumes:
+      - ${DATA:-.}/mongo:/data/db
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    volumes:
+      - ${DATA:-.}/qdrant:/qdrant/storage
+  server:
+    image: ${REPOSITORY:-spacetimehub}/server:${IMAGE_TAG:-latest}
+    container_name: server
+    restart: unless-stopped
+    ports:
+      - "8010:80"
+    environment:
+      MONGODB_URI: mongodb://mongo/idata
+      AGENT_URL: http://agent
+      MODE: production
+      JWT: "false"
+      LOGLEVEL: info
+      TZ: Europe/Amsterdam
+      LATITUDE: 51.41191 
+      LONGITUDE: 5.44969 
+    volumes:
+      -  ${DATA:-.}/server:/usr/src/app/data
+    depends_on:
+      - mongo
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.server.rule=Host(`server.${DOMAIN}`)"
+        - "traefik.http.routers.server.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.server.tls.certresolver=letsencrypt"
+        - "traefik.http.services.server.loadbalancer.server.port=80"   
+  portal:
+    image: ${REPOSITORY:-spacetimehub}/portal:${IMAGE_TAG:-latest}
+    container_name: portal
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.portal.rule=Host(`portal.${DOMAIN}`)"
+        - "traefik.http.routers.portal.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.portal.tls.certresolver=letsencrypt"
+        - "traefik.http.services.portal.loadbalancer.server.port=80"   
+  forms:
+    image: ${REPOSITORY:-spacetimehub}/forms:${IMAGE_TAG:-latest}
+    container_name: forms 
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.forms.rule=Host(`forms.${DOMAIN}`)"
+        - "traefik.http.routers.forms.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.forms.tls.certresolver=letsencrypt"
+        - "traefik.http.services.forms.loadbalancer.server.port=80"   
+  modeler:
+    image: ${REPOSITORY:-spacetimehub}/modeler:${IMAGE_TAG:-latest}
+    container_name: modeler 
+    restart: unless-stopped
+    ports:
+      - "3005:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.modeler.rule=Host(`modeler.${DOMAIN}`)"
+        - "traefik.http.routers.modeler.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.modeler.tls.certresolver=letsencrypt"
+        - "traefik.http.services.modeler.loadbalancer.server.port=80"   
+  draw:
+    image: ${REPOSITORY:-spacetimehub}/draw:${IMAGE_TAG:-latest}
+    container_name: draw 
+    restart: unless-stopped
+    ports:
+      - "3006:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.draw.rule=Host(`draw.${DOMAIN}`)"
+        - "traefik.http.routers.draw.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.draw.tls.certresolver=letsencrypt"
+        - "traefik.http.services.draw.loadbalancer.server.port=80"   
+  tuya:
+    image: ${REPOSITORY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
+    container_name: tuya 
+    restart: unless-stopped
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN}`)"
+        - "traefik.http.routers.tuya.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.tuya.tls.certresolver=letsencrypt"
+        - "traefik.http.services.tuya.loadbalancer.server.port=80"   
+  tesla:
+    image: ${REPOSITORY:-spacetimehub}/tesla:${IMAGE_TAG:-latest}
+    container_name: tesla 
+    restart: unless-stopped
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.tesla.rule=Host(`tesla.${DOMAIN}`)"
+        - "traefik.http.routers.tesla.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.tesla.tls.certresolver=letsencrypt"
+        - "traefik.http.services.tesla.loadbalancer.server.port=80"   
+  agent:
+    image: ${REPOSITORY:-spacetimehub}/agent:${IMAGE_TAG:-latest}
+    container_name: agent
+    restart: unless-stopped
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      SERVER_URL: http://server
+      COHERE_API_KEY: ${COHERE_API_KEY} 
+      LLM: cohere
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN}`)"
+        - "traefik.http.routers.agent.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.agent.tls.certresolver=letsencrypt"
+        - "traefik.http.services.agent.loadbalancer.server.port=80"   
