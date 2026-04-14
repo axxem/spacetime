@@ -137,6 +137,8 @@ services:
     image: ${REPOSITORY:-spacetimehub}/agent:${IMAGE_TAG:-latest}
     container_name: agent
     restart: unless-stopped
+    ports:
+      - "8030:80"
     environment:
       QDRANT_URL: http://qdrant:6333
       SERVER_URL: http://server
