@@ -1,0 +1,149 @@
+services:
+  mongo:
+    image: mongo:4.4
+    container_name: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: idata
+    volumes:
+      - ${DATA:-.}/mongo:/data/db
+    networks:
+      - traefik_default
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    volumes:
+      - ${DATA:-.}/qdrant:/qdrant/storage
+    networks:
+      - traefik_default
+  server:
+    image: ${REPOSITORY:-spacetimehub}/server:${IMAGE_TAG:-latest}
+    container_name: server
+    restart: unless-stopped
+    ports:
+      - "8010:80"
+    environment:
+      MONGODB_URI: mongodb://mongo/idata
+      AGENT_URL: http://agent
+      MODE: production
+      JWT: "false"
+      LOGLEVEL: info
+      TZ: Europe/Amsterdam
+      LATITUDE: 51.41191 
+      LONGITUDE: 5.44969 
+    volumes:
+      -  ${DATA:-.}/server:/usr/src/app/data
+    depends_on:
+      - mongo
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.server.rule=Host(`server.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.server.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.server.tls.certresolver=letsencrypt"
+        - "traefik.http.services.server.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  portal:
+    image: ${REPOSITORY:-spacetimehub}/portal:${IMAGE_TAG:-latest}
+    container_name: portal
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.portal.rule=Host(`portal.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.portal.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.portal.tls.certresolver=letsencrypt"
+        - "traefik.http.services.portal.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  forms:
+    image: ${REPOSITORY:-spacetimehub}/forms:${IMAGE_TAG:-latest}
+    container_name: forms 
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.forms.rule=Host(`forms.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.forms.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.forms.tls.certresolver=letsencrypt"
+        - "traefik.http.services.forms.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  modeler:
+    image: ${REPOSITORY:-spacetimehub}/modeler:${IMAGE_TAG:-latest}
+    container_name: modeler 
+    restart: unless-stopped
+    ports:
+      - "3005:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.modeler.rule=Host(`modeler.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.modeler.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.modeler.tls.certresolver=letsencrypt"
+        - "traefik.http.services.modeler.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  draw:
+    image: ${REPOSITORY:-spacetimehub}/draw:${IMAGE_TAG:-latest}
+    container_name: draw 
+    restart: unless-stopped
+    ports:
+      - "3006:80"
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.draw.rule=Host(`draw.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.draw.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.draw.tls.certresolver=letsencrypt"
+        - "traefik.http.services.draw.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  tuya:
+    image: ${REPOSITORY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
+    container_name: tuya 
+    restart: unless-stopped
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.tuya.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.tuya.tls.certresolver=letsencrypt"
+        - "traefik.http.services.tuya.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  tesla:
+    image: ${REPOSITORY:-spacetimehub}/tesla:${IMAGE_TAG:-latest}
+    container_name: tesla 
+    restart: unless-stopped
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.tesla.rule=Host(`tesla.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.tesla.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.tesla.tls.certresolver=letsencrypt"
+        - "traefik.http.services.tesla.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+  agent:
+    image: ${REPOSITORY:-spacetimehub}/agent:${IMAGE_TAG:-latest}
+    container_name: agent
+    restart: unless-stopped
+    ports:
+      - "8030:8030"
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      SERVER_URL: http://server
+      COHERE_API_KEY: ${COHERE_API_KEY} 
+      LLM: cohere
+    labels:
+        - "traefik.enable=true"                                                                                                      
+        - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.agent.entrypoints=websecure"                                                                        
+        - "traefik.http.routers.agent.tls.certresolver=letsencrypt"
+        - "traefik.http.services.agent.loadbalancer.server.port=80"   
+    networks:
+      - traefik_default
+
+networks:
+  traefik_default:
+    external: true
