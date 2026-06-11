@@ -100,30 +100,6 @@ services:
         - "traefik.http.services.draw.loadbalancer.server.port=80"   
     networks:
       - traefik_default
-  tuya:
-    image: ${REPOSITORY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
-    container_name: tuya 
-    restart: unless-stopped
-    labels:
-        - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN:-localhost}`)"
-        - "traefik.http.routers.tuya.entrypoints=websecure"                                                                        
-        - "traefik.http.routers.tuya.tls.certresolver=letsencrypt"
-        - "traefik.http.services.tuya.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
-  tesla:
-    image: ${REPOSITORY:-spacetimehub}/tesla:${IMAGE_TAG:-latest}
-    container_name: tesla 
-    restart: unless-stopped
-    labels:
-        - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.tesla.rule=Host(`tesla.${DOMAIN:-localhost}`)"
-        - "traefik.http.routers.tesla.entrypoints=websecure"                                                                        
-        - "traefik.http.routers.tesla.tls.certresolver=letsencrypt"
-        - "traefik.http.services.tesla.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   agent:
     image: ${REPOSITORY:-spacetimehub}/agent:${IMAGE_TAG:-latest}
     container_name: agent
@@ -143,6 +119,5 @@ services:
         - "traefik.http.services.agent.loadbalancer.server.port=80"   
     networks:
       - traefik_default
-
 networks:
   traefik_default:
