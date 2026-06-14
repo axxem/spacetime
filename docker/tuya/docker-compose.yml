@@ -3,6 +3,8 @@ services:
     image: ${REPOSITORY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
     container_name: tuya 
     restart: unless-stopped
+    ports:
+      - "3095:3095"
     labels:
         - "traefik.enable=true"                                                                                                      
         - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN:-localhost}`)"
