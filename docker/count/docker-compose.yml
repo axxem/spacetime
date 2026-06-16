@@ -1,0 +1,13 @@
+services:
+  count:
+    image: ${REGISTRY:-spacetimehub}/count:${IMAGE_TAG:-latest}
+    container_name: count
+    restart: unless-stopped
+    ports:
+      - "8097:80"
+    networks:
+      - traefik_default
+
+networks:
+  traefik_default:
+    external: true
