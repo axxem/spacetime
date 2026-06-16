@@ -1,16 +1,10 @@
 services:
   tuya:
-    image: ${REPOSITORY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
-    container_name: tuya 
+    image: ${REGISTRY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
+    container_name: tuya
     restart: unless-stopped
     ports:
-      - "3095:3095"
-    labels:
-        - "traefik.enable=true"                                                                                                      
-        - "traefik.http.routers.tuya.rule=Host(`tuya.${DOMAIN:-localhost}`)"
-        - "traefik.http.routers.tuya.entrypoints=websecure"                                                                        
-        - "traefik.http.routers.tuya.tls.certresolver=letsencrypt"
-        - "traefik.http.services.tuya.loadbalancer.server.port=3095"   
+      - "3095:80"
     networks:
       - traefik_default
 

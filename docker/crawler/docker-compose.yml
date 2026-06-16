@@ -1,0 +1,13 @@
+services:
+  crawler:
+    image: ${REGISTRY:-spacetimehub}/crawler:${IMAGE_TAG:-latest}
+    container_name: crawler
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    networks:
+      - traefik_default
+
+networks:
+  traefik_default:
+    external: true
