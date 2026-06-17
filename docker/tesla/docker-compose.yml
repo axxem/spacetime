@@ -1,6 +1,6 @@
 services:
   tesla:
-    image: ${REGISTRY:-spacetimehub}/tesla:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/tesla:${VERSION:-latest}
     container_name: tesla 
     restart: unless-stopped
     labels:

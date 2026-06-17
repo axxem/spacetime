@@ -1,6 +1,6 @@
 services:
   tuya:
-    image: ${REGISTRY:-spacetimehub}/tuya:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/tuya:${VERSION:-latest}
     container_name: tuya
     restart: unless-stopped
     ports:

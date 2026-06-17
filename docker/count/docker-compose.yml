@@ -1,6 +1,6 @@
 services:
   count:
-    image: ${REGISTRY:-spacetimehub}/count:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/count:${VERSION:-latest}
     container_name: count
     restart: unless-stopped
     ports:

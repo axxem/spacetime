@@ -18,7 +18,7 @@ services:
     networks:
       - traefik_default
   server:
-    image: ${REGISTRY:-spacetimehub}/server:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/server:${VERSION:-latest}
     container_name: server
     restart: unless-stopped
     ports:
@@ -45,7 +45,7 @@ services:
     networks:
       - traefik_default
   portal:
-    image: ${REGISTRY:-spacetimehub}/portal:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/portal:${VERSION:-latest}
     container_name: portal
     restart: unless-stopped
     ports:
@@ -59,7 +59,7 @@ services:
     networks:
       - traefik_default
   forms:
-    image: ${REGISTRY:-spacetimehub}/forms:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/forms:${VERSION:-latest}
     container_name: forms 
     restart: unless-stopped
     ports:
@@ -73,7 +73,7 @@ services:
     networks:
       - traefik_default
   modeler:
-    image: ${REGISTRY:-spacetimehub}/modeler:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/modeler:${VERSION:-latest}
     container_name: modeler 
     restart: unless-stopped
     ports:
@@ -87,7 +87,7 @@ services:
     networks:
       - traefik_default
   draw:
-    image: ${REGISTRY:-spacetimehub}/draw:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/draw:${VERSION:-latest}
     container_name: draw 
     restart: unless-stopped
     ports:
@@ -101,7 +101,7 @@ services:
     networks:
       - traefik_default
   agent:
-    image: ${REGISTRY:-spacetimehub}/agent:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/agent:${VERSION:-latest}
     container_name: agent
     restart: unless-stopped
     ports:

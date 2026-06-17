@@ -1,6 +1,6 @@
 services:
   crawler:
-    image: ${REGISTRY:-spacetimehub}/crawler:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-spacetimehub}/crawler:${VERSION:-latest}
     container_name: crawler
     restart: unless-stopped
     ports:
