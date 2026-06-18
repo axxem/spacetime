@@ -6,8 +6,8 @@ services:
     ports:
       - "3095:80"
     networks:
-      - traefik_default
+      - spacetime_default
 
 networks:
-  traefik_default:
+  spacetime_default:
     external: true

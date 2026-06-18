@@ -1,4 +1,34 @@
 services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.transport.respondingtimeouts.readtimeout=600"
+      - "--entrypoints.websecure.transport.respondingtimeouts.writetimeout=600"
+      - "--entrypoints.websecure.transport.respondingtimeouts.idletimeout=600"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
   mongo:
     image: mongo:4.4
     container_name: mongo
@@ -7,16 +37,12 @@ services:
       MONGO_INITDB_DATABASE: idata
     volumes:
       - ${DATA:-.}/mongo:/data/db
-    networks:
-      - traefik_default
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
     restart: unless-stopped
     volumes:
       - ${DATA:-.}/qdrant:/qdrant/storage
-    networks:
-      - traefik_default
   server:
     image: ${REGISTRY:-spacetimehub}/server:${VERSION:-latest}
     container_name: server
@@ -42,8 +68,6 @@ services:
         - "traefik.http.routers.server.entrypoints=websecure"                                                                        
         - "traefik.http.routers.server.tls.certresolver=letsencrypt"
         - "traefik.http.services.server.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   portal:
     image: ${REGISTRY:-spacetimehub}/portal:${VERSION:-latest}
     container_name: portal
@@ -56,8 +80,6 @@ services:
         - "traefik.http.routers.portal.entrypoints=websecure"                                                                        
         - "traefik.http.routers.portal.tls.certresolver=letsencrypt"
         - "traefik.http.services.portal.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   forms:
     image: ${REGISTRY:-spacetimehub}/forms:${VERSION:-latest}
     container_name: forms 
@@ -70,8 +92,6 @@ services:
         - "traefik.http.routers.forms.entrypoints=websecure"                                                                        
         - "traefik.http.routers.forms.tls.certresolver=letsencrypt"
         - "traefik.http.services.forms.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   modeler:
     image: ${REGISTRY:-spacetimehub}/modeler:${VERSION:-latest}
     container_name: modeler 
@@ -84,8 +104,6 @@ services:
         - "traefik.http.routers.modeler.entrypoints=websecure"                                                                        
         - "traefik.http.routers.modeler.tls.certresolver=letsencrypt"
         - "traefik.http.services.modeler.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   draw:
     image: ${REGISTRY:-spacetimehub}/draw:${VERSION:-latest}
     container_name: draw 
@@ -98,26 +116,23 @@ services:
         - "traefik.http.routers.draw.entrypoints=websecure"                                                                        
         - "traefik.http.routers.draw.tls.certresolver=letsencrypt"
         - "traefik.http.services.draw.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
   agent:
     image: ${REGISTRY:-spacetimehub}/agent:${VERSION:-latest}
     container_name: agent
     restart: unless-stopped
     ports:
-      - "8030:8030"
+      - "8030:80"
     environment:
       QDRANT_URL: http://qdrant:6333
       SERVER_URL: http://server
       COHERE_API_KEY: ${COHERE_API_KEY} 
-      LLM: cohere
+      GROQ_API_KEY: ${GROQ_API_KEY} 
+      GEMINI_API_KEY: ${GEMINI_API_KEY} 
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY} 
+      LLM: ${LLM:-cohere}
     labels:
         - "traefik.enable=true"                                                                                                      
         - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.agent.entrypoints=websecure"                                                                        
         - "traefik.http.routers.agent.tls.certresolver=letsencrypt"
         - "traefik.http.services.agent.loadbalancer.server.port=80"   
-    networks:
-      - traefik_default
-networks:
-  traefik_default:

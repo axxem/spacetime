@@ -17,7 +17,7 @@ services:
       - "traefik.http.routers.homeassistant.tls.certresolver=letsencrypt"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
     networks:
-      - traefik_default
+      - spacetime_default
 networks:
-  traefik_default:
+  spacetime_default:
     external: true
