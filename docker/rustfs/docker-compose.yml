@@ -1,0 +1,29 @@
+services:
+  # The rustfs process runs as uid 10001 inside the container, but Docker creates a missing
+  # bind-mount host directory as root - so rustfs fails fast with "Permission denied (os error
+  # 13)" on an otherwise-correct setup unless that directory is already owned by 10001. This
+  # one-shot init container (the same fix RustFS's own docker-compose.yml uses) does that chown
+  # itself on every `up`, so there's no manual host step before first start.
+  rustfs-perms:
+    image: alpine:latest
+    command: ["sh", "-c", "mkdir -p /data && chown -R 10001:10001 /data"]
+    volumes:
+      - ${DATA:-.}/rustfs:/data
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    restart: unless-stopped
+    depends_on:
+      rustfs-perms:
+        condition: service_completed_successfully
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-spacetime}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-spacetime}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - ${DATA:-.}/.:/data

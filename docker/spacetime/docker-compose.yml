@@ -33,37 +33,95 @@ services:
     image: mongo:4.4
     container_name: mongo
     restart: unless-stopped
+    ports:
+      - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: idata
     volumes:
       - ${DATA:-.}/mongo:/data/db
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: qdrant
+  postgres:
+    # TimescaleDB's own image, not vanilla postgres - property_log is a TimescaleDB hypertable
+    # (see apps/server/drizzle/0018_property_log_timescale.sql), which needs the extension
+    # available. Otherwise wire-compatible with plain Postgres; everything else is unaffected.
+    image: timescale/timescaledb:2.26.1-pg18
+    container_name: postgres
     restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: spacetime
+      POSTGRES_HOST_AUTH_METHOD: trust   # disables password auth entirely
     volumes:
-      - ${DATA:-.}/qdrant:/qdrant/storage
+      - ${DATA:-.}/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  # The rustfs process runs as uid 10001 inside the container, but Docker creates a missing
+  # bind-mount host directory as root - so rustfs fails fast with "Permission denied (os error
+  # 13)" on an otherwise-correct setup unless that directory is already owned by 10001. This
+  # one-shot init container (the same fix RustFS's own docker-compose.yml uses) does that chown
+  # itself on every `up`, so there's no manual host step before first start.
+  rustfs-perms:
+    image: alpine:latest
+    command: ["sh", "-c", "mkdir -p /data && chown -R 10001:10001 /data"]
+    volumes:
+      - ${DATA:-.}/rustfs:/data
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    restart: unless-stopped
+    depends_on:
+      rustfs-perms:
+        condition: service_completed_successfully
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-spacetime}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-spacetime}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - ${DATA:-.}/rustfs:/data
   server:
     image: ${REGISTRY:-spacetimehub}/server:${VERSION:-latest}
     container_name: server
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "8010:80"
     environment:
       MONGODB_URI: mongodb://mongo/idata
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/spacetime
       AGENT_URL: http://agent
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-spacetime}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-spacetime}
+      RUSTFS_BUCKET: file
       MODE: production
       JWT: "false"
       LOGLEVEL: info
       TZ: Europe/Amsterdam
-      LATITUDE: 51.41191 
-      LONGITUDE: 5.44969 
+      LATITUDE: 51.41191
+      LONGITUDE: 5.44969
+    # Lets the server reach services on the host as host.docker.internal - built in on Docker
+    # Desktop, needed on Linux. The published benchmarks run their mock lamp service there.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       -  ${DATA:-.}/server:/usr/src/app/data
     depends_on:
-      - mongo
+      mongo:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
     labels:
-        - "traefik.enable=true"                                                                                                      
+        - "traefik.enable=true"
         - "traefik.http.routers.server.rule=Host(`server.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.server.entrypoints=websecure"                                                                        
         - "traefik.http.routers.server.tls.certresolver=letsencrypt"
@@ -72,6 +130,7 @@ services:
     image: ${REGISTRY:-spacetimehub}/portal:${VERSION:-latest}
     container_name: portal
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "3000:80"
     labels:
@@ -82,8 +141,9 @@ services:
         - "traefik.http.services.portal.loadbalancer.server.port=80"   
   forms:
     image: ${REGISTRY:-spacetimehub}/forms:${VERSION:-latest}
-    container_name: forms 
+    container_name: forms
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "3002:80"
     labels:
@@ -94,8 +154,9 @@ services:
         - "traefik.http.services.forms.loadbalancer.server.port=80"   
   modeler:
     image: ${REGISTRY:-spacetimehub}/modeler:${VERSION:-latest}
-    container_name: modeler 
+    container_name: modeler
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "3005:80"
     labels:
@@ -106,8 +167,9 @@ services:
         - "traefik.http.services.modeler.loadbalancer.server.port=80"   
   draw:
     image: ${REGISTRY:-spacetimehub}/draw:${VERSION:-latest}
-    container_name: draw 
+    container_name: draw
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "3006:80"
     labels:
@@ -120,16 +182,29 @@ services:
     image: ${REGISTRY:-spacetimehub}/agent:${VERSION:-latest}
     container_name: agent
     restart: unless-stopped
+    pull_policy: ${PULL_POLICY:-always}
     ports:
       - "8030:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      QDRANT_URL: http://qdrant:6333
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/spacetime
       SERVER_URL: http://server
-      COHERE_API_KEY: ${COHERE_API_KEY} 
-      GROQ_API_KEY: ${GROQ_API_KEY} 
-      GEMINI_API_KEY: ${GEMINI_API_KEY} 
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY} 
-      LLM: ${LLM:-cohere}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      LLM_PROVIDER: ${LLM_PROVIDER:-cohere}
+      LLM_MODEL: ${LLM_MODEL:-}
+      # The entity/property toolset (the default 'topic' is the older dotted-topic state tools).
+      ENTITY: ${ENTITY:-entity}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
         - "traefik.enable=true"                                                                                                      
         - "traefik.http.routers.agent.rule=Host(`agent.${DOMAIN:-localhost}`)"

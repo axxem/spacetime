@@ -1,0 +1,15 @@
+services:
+  postgres:
+    # TimescaleDB's own image, not vanilla postgres - property_log is a TimescaleDB hypertable
+    # (see apps/server/drizzle/0018_property_log_timescale.sql), which needs the extension
+    # available. Otherwise wire-compatible with plain Postgres; everything else is unaffected.
+    image: timescale/timescaledb:2.26.1-pg18
+    container_name: postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: spacetime
+      POSTGRES_HOST_AUTH_METHOD: trust   # disables password auth entirely
+    volumes:
+      - ${DATA:-.}/postgres:/var/lib/postgresql
